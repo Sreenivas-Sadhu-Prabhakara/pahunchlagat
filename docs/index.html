@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pahunchlagat — landed cost</title>
+<meta name="description" content="Freight, coolie, transport, wastage and the decisive GST treatment — Pahunchlagat computes the true delivered cost per unit of trucked-in stock.">
+<style>
+  :root{--bg:#f2f5f8;--card:#fff;--ink:#12202b;--muted:#516474;--brand:#2e5e9a;--brand-ink:#173a63;--line:#dbe4ec;--accent:#e7eef6}
+  @media (prefers-color-scheme:dark){:root{--bg:#0e1419;--card:#161d24;--ink:#e4edf5;--muted:#94a7b8;--brand:#5b93d6;--brand-ink:#bcd6f2;--line:#243039;--accent:#152029}}
+  *{box-sizing:border-box}html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px}
+  header{padding:64px 0 24px;text-align:center}
+  .eyebrow{color:var(--brand);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  h1{font-size:44px;margin:.2em 0 .1em;letter-spacing:-.02em}
+  .tag{color:var(--muted);font-size:19px;max-width:640px;margin:8px auto 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:28px 0}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}h1{font-size:34px}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .card h2{margin:0 0 8px;font-size:20px}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:15px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .switch{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;color:var(--muted)}
+  .out{margin-top:16px;background:var(--accent);border-radius:12px;padding:16px}
+  .big{font-size:30px;font-weight:800;color:var(--brand-ink)}
+  .rowline{display:flex;justify-content:space-between;padding:3px 0;font-size:14px;border-top:1px dashed var(--line);margin-top:6px}
+  footer{color:var(--muted);font-size:13px;text-align:center;padding:40px 0}
+  code{background:var(--accent);padding:2px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Pahunchlagat · पहुँच लागत</div>
+    <h1>The real delivered cost</h1>
+    <p class="tag">Freight and breakage silently eat the margin you never separated from the invoice.
+      Pahunchlagat adds every hop — and gets the GST treatment right — to show your true landed cost per unit.</p>
+  </header>
+  <div class="grid">
+    <div class="card">
+      <h2>Try it</h2>
+      <label>Goods value pre-GST (₹)</label><input id="goods" type="number" value="10000">
+      <div class="two"><div><label>GST %</label><input id="gst" type="number" value="18"></div>
+        <div><label>Units</label><input id="units" type="number" value="100"></div></div>
+      <div class="two"><div><label>Freight ₹</label><input id="freight" type="number" value="500"></div>
+        <div><label>Coolie ₹</label><input id="coolie" type="number" value="200"></div></div>
+      <div class="two"><div><label>Local transport ₹</label><input id="transport" type="number" value="300"></div>
+        <div><label>Wastage %</label><input id="wastage" type="number" value="5"></div></div>
+      <div class="switch"><input id="reg" type="checkbox"><span>GST-registered (recover input tax). Off = composition/unregistered.</span></div>
+      <div class="out">
+        <div>Landed cost per unit</div>
+        <div class="big" id="pu">₹0.00</div>
+        <div class="rowline"><span>GST in cost</span><b id="g">–</b></div>
+        <div class="rowline"><span>Landed total</span><b id="t">–</b></div>
+        <div class="rowline"><span>Usable units</span><b id="u">–</b></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Why the GST toggle matters</h2>
+      <p style="color:var(--muted)">Get it backwards and every cost sheet is off by the GST rate.
+        A <b>registered</b> shop recovers GST as input credit — it is <i>not</i> a cost. A
+        <b>composition or unregistered</b> shop cannot — so GST is <i>added</i> to the cost base.</p>
+      <p style="color:var(--muted)">Landed = goods + (GST if unregistered) + freight + coolie +
+        transport, spread over units net of <code>wastage %</code>.</p>
+      <p style="color:var(--muted);font-size:14px">Flutter → Go → PostgreSQL; the Go middleware keeps a printable history of cost sheets.</p>
+    </div>
+  </div>
+  <footer>Pahunchlagat · a local-first shopkeeper tool · offline, no account.</footer>
+</div>
+<script>
+  const $=id=>document.getElementById(id), inr=v=>'₹'+(isFinite(v)?v:0).toFixed(2);
+  function calc(){
+    const goods=+$('goods').value||0, gst=+$('gst').value||0, units=+$('units').value||0,
+      freight=+$('freight').value||0, coolie=+$('coolie').value||0, transport=+$('transport').value||0,
+      wastage=+$('wastage').value||0, reg=$('reg').checked;
+    const gstInCost = reg?0:goods*gst/100;
+    const total = goods+gstInCost+freight+coolie+transport;
+    const usable = units*(1-wastage/100);
+    const pu = usable>0?total/usable:0;
+    $('pu').textContent=inr(pu); $('g').textContent=inr(gstInCost);
+    $('t').textContent=inr(total); $('u').textContent=usable.toFixed(1);
+  }
+  document.querySelectorAll('input').forEach(el=>el.addEventListener('input',calc)); calc();
+</script>
+</body>
+</html>
